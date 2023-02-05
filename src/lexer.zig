@@ -1,7 +1,7 @@
 const std = @import("std");
 const t = std.testing;
 
-const parser = @import("parser.zig");
+const parser = @import("parseInfo.zig");
 
 pub const Lexer = struct {
     source: []const u8,
