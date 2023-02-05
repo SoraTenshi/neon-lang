@@ -1,5 +1,5 @@
 const std = @import("std");
-const lexer = @import("parser.zig");
+const lexer = @import("lexer.zig");
 
 pub fn replMode(allocator: std.mem.Allocator) !void {
     const stdout_file = std.io.getStdOut().writer();
