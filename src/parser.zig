@@ -95,7 +95,7 @@ pub const keywords = std.ComptimeStringMap(TokenType, .{
     .{ ",", .comma },
     .{ ";", .semicolon },
     .{ "?", .question },
-    .{ "executed", .at },
+    .{ "@", .at },
 
     // Scopes
     .{ "(", .left_paren },
