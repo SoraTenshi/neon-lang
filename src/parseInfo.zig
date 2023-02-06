@@ -20,7 +20,7 @@ pub const TokenType = enum(u8) {
     comma, // ,
     semicolon, // ;
     question, // ?
-    at, // @ <- maybe useful as annotation for command to be executed
+    at, // @
 
     // Scopes
     left_paren, // (
@@ -111,15 +111,15 @@ pub const keywords = std.ComptimeStringMap(TokenType, .{
     .{ "::", .fn_decl },
 
     // Keywords
-    .{ "if", .if_kw },
-    .{ "else", .else_kw },
-    .{ "for", .for_kw },
-    .{ "while", .while_kw },
-    .{ "true", .true_kw },
-    .{ "false", .false_kw },
-    .{ "return", .return_kw },
-    .{ "let", .let_kw },
-    .{ "mut", .mut_kw },
     .{ "break", .break_kw },
     .{ "continue", .continue_kw },
+    .{ "else", .else_kw },
+    .{ "false", .false_kw },
+    .{ "for", .for_kw },
+    .{ "if", .if_kw },
+    .{ "let", .let_kw },
+    .{ "mut", .mut_kw },
+    .{ "return", .return_kw },
+    .{ "true", .true_kw },
+    .{ "while", .while_kw },
 });
