@@ -14,6 +14,9 @@ pub const TokenType = enum(u8) {
     number, // <int>
     string, // <string>
 
+    // Literal
+    quote,
+
     // Operator like
     operator, // see Operator
     dot, // .
@@ -33,7 +36,7 @@ pub const TokenType = enum(u8) {
     // Assignment
     equal, // =
     colon, // :
-    fn_decl, // <ident> ::
+    fn_decl, // ::
 
     // Keywords
     if_kw, // if
@@ -96,6 +99,9 @@ pub const keywords = std.ComptimeStringMap(TokenType, .{
     .{ ";", .semicolon },
     .{ "?", .question },
     .{ "@", .at },
+
+    // Literal
+    .{ "\"", .quote },
 
     // Scopes
     .{ "(", .left_paren },
