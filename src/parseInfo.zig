@@ -11,8 +11,11 @@ pub const TokenType = enum(u8) {
     identifier, // <any>
 
     // Type expression
+    num_literal, // <number>
+    str_literal, // <string>
+
     number, // <int>
-    string, // <string>
+    string, // <string> (type)
 
     // Literal
     quote,

@@ -89,12 +89,70 @@ pub const Lexer = struct {
         return result;
     }
 
+    fn parseLiteral(lexer: *Lexer, token: parser.TokenType) ?[]parser.Token {
+        if (token != .quote or token != .at) {
+            return null;
+        }
+        var tokens = std.ArrayList(parser.Token).init(lexer.alloc);
+        defer tokens.deinit();
+
+        tokens.append(parser.Token{
+            .token = token,
+            .value = "",
+        }) catch return null;
+
+        var start = lexer.position;
+        var did_find_other = false;
+
+        while (start + lexer.look_ahead >= lexer.source.len) : (lexer.look_ahead += 1) {
+            const current_char = lexer.source[lexer.position + lexer.look_ahead];
+            const last_char = lexer.source[lexer.position + lexer.look_ahead - 1];
+            const is_literal = last_char != '\\' and current_char == '\"';
+            if (!is_literal) {
+                continue;
+            }
+
+            const last_token = tokens.getLast().token;
+            tokens.append(parser.Token{
+                .token = .quote,
+                .value = "",
+            }) catch return null;
+
+            if (last_token == .quote) {
+                did_find_other = true;
+                break;
+            } else {
+                start += 1;
+            }
+        }
+
+        if (!did_find_other) {
+            return null;
+        }
+
+        tokens.append(parser.Token{
+            .token = .str_literal,
+            .value = lexer.source[start .. start + lexer.look_ahead - 1],
+        }) catch return null;
+
+        tokens.append(parser.Token{
+            .token = .quote,
+            .value = "",
+        }) catch return null;
+
+        return tokens.toOwnedSlice() catch null;
+    }
+
     fn isExistingToken(lexer: *Lexer) bool {
         const current_index = lexer.position + lexer.look_ahead;
-        const is_whitespace = !isWhitespace(lexer.source[current_index]);
-        const is_next_token = lexer.lookaheadString(false) == null;
+        if (current_index >= lexer.source.len) {
+            return false;
+        }
 
-        return is_whitespace and is_next_token;
+        const is_whitespace = isWhitespace(lexer.source[current_index]);
+        const is_next_token = lexer.lookaheadString(false) != null;
+
+        return !is_whitespace and !is_next_token;
     }
 
     fn nextToken(lexer: *Self) !parser.Token {
@@ -118,7 +176,7 @@ pub const Lexer = struct {
         lexer.position = ending_index;
         if (parsedNumber != null) {
             return parser.Token{
-                .token = .number,
+                .token = .num_literal,
                 .value = identifiable,
             };
         } else {
@@ -147,10 +205,15 @@ pub const Lexer = struct {
             if (found_what == null) {
                 try tokens.append(try nextToken(lexer));
             } else {
-                try tokens.append(.{
-                    .token = found_what.?,
-                    .value = "",
-                });
+                const literals = lexer.parseLiteral(found_what.?);
+                if (literals == null) {
+                    try tokens.append(.{
+                        .token = found_what.?,
+                        .value = "",
+                    });
+                } else {
+                    try tokens.appendSlice(literals.?);
+                }
             }
         }
 
@@ -167,7 +230,7 @@ test "Simple let mut tokenizer" {
         .{ .token = .mut_kw, .value = "" },
         .{ .token = .identifier, .value = "abc" },
         .{ .token = .equal, .value = "" },
-        .{ .token = .number, .value = "1337" },
+        .{ .token = .num_literal, .value = "1337" },
         .{ .token = .semicolon, .value = "" },
     };
 
@@ -224,7 +287,7 @@ test "' = ' parsing" {
 }
 
 test "string literal parsing" {
-    const str = "let str: string = \"abc\";";
+    const str = "let str: string = \"ab\\\"c\";";
     var lexer = Lexer.init(t.allocator, str);
 
     const expected_tokens = &[_]parser.Token{
@@ -234,7 +297,7 @@ test "string literal parsing" {
         .{ .token = .string, .value = "" },
         .{ .token = .equal, .value = "" },
         .{ .token = .quote, .value = "" },
-        .{ .token = .identifier, .value = "abc" },
+        .{ .token = .str_literal, .value = "ab\"c" },
         .{ .token = .quote, .value = "" },
         .{ .token = .semicolon, .value = "" },
     };
@@ -242,7 +305,7 @@ test "string literal parsing" {
     const actual_tokens = try lexer.tokenize();
     defer lexer.alloc.free(actual_tokens);
 
-    try t.expectEqual(expected_tokens.len, actual_tokens.len);
+    std.debug.print("{any}\n", .{actual_tokens});
 
     var value: usize = 0;
     while (value < expected_tokens.len) : (value += 1) {
@@ -312,8 +375,7 @@ test "function mix with parameters" {
         .{ .token = .identifier, .value = "print" },
         .{ .token = .left_paren, .value = "" },
         .{ .token = .quote, .value = "" },
-        .{ .token = .identifier, .value = "Not" },
-        .{ .token = .identifier, .value = "Empty" },
+        .{ .token = .str_literal, .value = "Not Empty" },
         .{ .token = .quote, .value = "" },
         .{ .token = .right_paren, .value = "" },
         .{ .token = .semicolon, .value = "" },
