@@ -277,3 +277,58 @@ test "function decl with body" {
         try t.expectEqualStrings(expected_tokens[value].value, actual_tokens[value].value);
     }
 }
+
+test "function mix with parameters" {
+    const str =
+        \\main :: (str: string): string {
+        \\    if(!str.empty()) {
+        \\        print("Not Empty");
+        \\    }
+        \\}
+    ;
+    var lexer = Lexer.init(t.allocator, str);
+
+    const expected_tokens = &[_]parser.Token{
+        .{ .token = .identifier, .value = "main" },
+        .{ .token = .fn_decl, .value = "" },
+        .{ .token = .left_paren, .value = "" },
+        .{ .token = .identifier, .value = "str" },
+        .{ .token = .colon, .value = "" },
+        .{ .token = .string, .value = "" },
+        .{ .token = .right_paren, .value = "" },
+        .{ .token = .colon, .value = "" },
+        .{ .token = .string, .value = "" },
+        .{ .token = .left_brace, .value = "" },
+        .{ .token = .if_kw, .value = "" },
+        .{ .token = .left_paren, .value = "" },
+        .{ .token = .bang, .value = "" },
+        .{ .token = .identifier, .value = "str" },
+        .{ .token = .dot, .value = "" },
+        .{ .token = .identifier, .value = "empty" },
+        .{ .token = .left_paren, .value = "" },
+        .{ .token = .right_paren, .value = "" },
+        .{ .token = .right_paren, .value = "" },
+        .{ .token = .left_brace, .value = "" },
+        .{ .token = .identifier, .value = "print" },
+        .{ .token = .left_paren, .value = "" },
+        .{ .token = .quote, .value = "" },
+        .{ .token = .identifier, .value = "Not" },
+        .{ .token = .identifier, .value = "Empty" },
+        .{ .token = .quote, .value = "" },
+        .{ .token = .right_paren, .value = "" },
+        .{ .token = .semicolon, .value = "" },
+        .{ .token = .right_brace, .value = "" },
+        .{ .token = .right_brace, .value = "" },
+    };
+
+    const actual_tokens = try lexer.tokenize();
+    defer lexer.alloc.free(actual_tokens);
+
+    try t.expectEqual(expected_tokens.len, actual_tokens.len);
+
+    var value: usize = 0;
+    while (value < expected_tokens.len) : (value += 1) {
+        try t.expectEqual(expected_tokens[value].token, actual_tokens[value].token);
+        try t.expectEqualStrings(expected_tokens[value].value, actual_tokens[value].value);
+    }
+}

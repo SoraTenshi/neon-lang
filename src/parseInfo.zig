@@ -23,6 +23,7 @@ pub const TokenType = enum(u8) {
     comma, // ,
     semicolon, // ;
     question, // ?
+    bang, // !
     at, // @
 
     // Scopes
@@ -98,6 +99,7 @@ pub const keywords = std.ComptimeStringMap(TokenType, .{
     .{ ",", .comma },
     .{ ";", .semicolon },
     .{ "?", .question },
+    .{ "!", .bang },
     .{ "@", .at },
 
     // Literal
