@@ -17,6 +17,7 @@ pub const Lexer = struct {
     tokens: std.ArrayList(parser.Token),
     source: []const u8,
     position: usize,
+    look_ahead: usize,
 
     const Self = @This();
 
@@ -26,24 +27,46 @@ pub const Lexer = struct {
             .tokens = std.ArrayList(parser.Token).init(alloc),
             .source = src,
             .position = 0,
+            .look_ahead = 0,
         };
     }
 
     pub fn findToken(lexer: *Self, look_for: []const u8) ?[]const u8 {
         const end_index = lexer.position + look_for.len;
-        if (lexer.source.len < lexer.position + end_index) {
+        if (lexer.source.len < end_index) {
             return null;
         }
 
         if (std.mem.eql(u8, look_for, lexer.source[lexer.position..end_index])) {
-            lexer.position += look_for.len;
             return look_for;
         } else {
             return null;
         }
     }
 
-    fn lookaheadString(lexer: *Lexer, c: u8, consume: bool) ?[]const u8 {
+    fn lookaheadCharacter(lexer: *Lexer) ?[]const u8 {
+        const start = lexer.position + lexer.look_ahead;
+        var end = start + 1;
+
+        var has_token = parser.keywords.has(lexer.source[start..end]);
+        if (!has_token) {
+            return null;
+        }
+
+        if (lexer.source.len <= end + 1) {
+            return lexer.source[start..end];
+        }
+
+        const is_multi_token = parser.keywords.has(lexer.source[start .. end + 1]);
+        if (is_multi_token) {
+            end += 1;
+        }
+
+        return lexer.source[start..end];
+    }
+
+    fn lookaheadString(lexer: *Lexer, consume: bool) ?[]const u8 {
+        const c = lexer.source[lexer.position + lexer.look_ahead];
         const result = switch (c) {
             'b' => lexer.findToken("break"),
             'c' => lexer.findToken("continue"),
@@ -57,29 +80,30 @@ pub const Lexer = struct {
             's' => lexer.findToken("string"),
             't' => lexer.findToken("true"),
             'w' => lexer.findToken("while"),
-            else => blk: {
-                const token = parser.keywords.get(&[_]u8{c});
-                break :blk if (token == null) null else lexer.source[lexer.position .. lexer.position + 1];
-            },
+            else => lexer.lookaheadCharacter(),
         };
-        if (result != null and result.?.len == 1 and consume) {
-            lexer.position += 1;
+
+        if (consume) {
+            lexer.position += (result orelse "").len;
         }
         return result;
     }
 
-    fn isExistingToken(lexer: *Lexer, read_ahead: usize) bool {
-        const current_index = lexer.position + read_ahead;
+    fn isExistingToken(lexer: *Lexer) bool {
+        const current_index = lexer.position + lexer.look_ahead;
         const is_whitespace = !isWhitespace(lexer.source[current_index]);
-        const is_next_token = lookaheadString(lexer, lexer.source[current_index], false) == null;
+        const is_next_token = lexer.lookaheadString(false) == null;
 
         return is_whitespace and is_next_token;
     }
 
     fn nextToken(lexer: *Self) !parser.Token {
-        var read_ahead: usize = 0;
-        while ((lexer.source.len > lexer.position + read_ahead) and lexer.isExistingToken(read_ahead)) : (read_ahead += 1) {}
-        const ending_index = lexer.position + read_ahead;
+        defer lexer.look_ahead = 0;
+
+        while ((lexer.source.len > lexer.position + lexer.look_ahead) and lexer.isExistingToken()) {
+            lexer.look_ahead += 1;
+        }
+        const ending_index = lexer.position + lexer.look_ahead;
 
         if (lexer.source.len < ending_index) {
             const formatted = try std.fmt.allocPrint(lexer.alloc, "Couldn't parse token at position: {d}\n", .{lexer.position - 1});
@@ -112,12 +136,12 @@ pub const Lexer = struct {
         while (lexer.position < lexer.source.len) {
             const c = lexer.source[lexer.position];
 
-            if (isWhitespace(lexer.source[lexer.position])) {
+            if (isWhitespace(c)) {
                 lexer.position += 1;
                 continue;
             }
 
-            const lookahead = lexer.lookaheadString(c, true) orelse "";
+            const lookahead = lexer.lookaheadString(true) orelse "";
             const found_what = parser.keywords.get(lookahead);
 
             if (found_what == null) {
