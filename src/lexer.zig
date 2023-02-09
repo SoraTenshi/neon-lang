@@ -260,7 +260,6 @@ test "' = ' parsing" {
 
 test "string literal parsing" {
     const str = "let str: string = \"ab\\\"cd\";";
-    std.debug.print("str: {s}\n", .{str});
     var lexer = Lexer.init(t.allocator, str);
 
     const expected_tokens = &[_]parser.Token{
@@ -278,11 +277,6 @@ test "string literal parsing" {
     const actual_tokens = try lexer.tokenize();
     defer lexer.alloc.free(actual_tokens);
 
-    std.debug.print("\n", .{});
-    for (actual_tokens) |token| {
-        std.debug.print("{any}\n", .{token});
-    }
-
     var value: usize = 0;
     while (value < expected_tokens.len) : (value += 1) {
         try t.expectEqual(expected_tokens[value].token, actual_tokens[value].token);
@@ -292,7 +286,6 @@ test "string literal parsing" {
 
 test "command literal parsing" {
     const str = "let str: string = @\"ab\\\"cd\";";
-    std.debug.print("str: {s}\n", .{str});
     var lexer = Lexer.init(t.allocator, str);
 
     const expected_tokens = &[_]parser.Token{
@@ -310,11 +303,6 @@ test "command literal parsing" {
 
     const actual_tokens = try lexer.tokenize();
     defer lexer.alloc.free(actual_tokens);
-
-    std.debug.print("\n", .{});
-    for (actual_tokens) |token| {
-        std.debug.print("{any}\n", .{token});
-    }
 
     var value: usize = 0;
     while (value < expected_tokens.len) : (value += 1) {
