@@ -3,7 +3,7 @@ const mem = std.mem;
 
 const t = std.testing;
 
-const parser = @import("parseInfo.zig");
+const parser = @import("parse_info.zig");
 const stdout = std.io.getStdOut().writer();
 const isWhitespace = std.ascii.isWhitespace;
 
