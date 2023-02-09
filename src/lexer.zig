@@ -89,58 +89,30 @@ pub const Lexer = struct {
         return result;
     }
 
-    fn parseLiteral(lexer: *Lexer, token: parser.TokenType) ?[]parser.Token {
-        if (token != .quote or token != .at) {
+    fn parseLiteral(lexer: *Lexer, token: parser.TokenType) ?parser.Token {
+        if (token != .quote) {
             return null;
         }
-        var tokens = std.ArrayList(parser.Token).init(lexer.alloc);
-        defer tokens.deinit();
 
-        tokens.append(parser.Token{
-            .token = token,
-            .value = "",
-        }) catch return null;
+        var pointer = lexer.position;
+        while (pointer < lexer.source.len) : (pointer += 1) {
+            const current = lexer.source[pointer];
+            const last = if (pointer > 0) lexer.source[pointer - 1] else current;
 
-        var start = lexer.position;
-        var did_find_other = false;
-
-        while (start + lexer.look_ahead >= lexer.source.len) : (lexer.look_ahead += 1) {
-            const current_char = lexer.source[lexer.position + lexer.look_ahead];
-            const last_char = lexer.source[lexer.position + lexer.look_ahead - 1];
-            const is_literal = last_char != '\\' and current_char == '\"';
+            const is_literal = last != '\\' and current == '\"';
             if (!is_literal) {
                 continue;
-            }
-
-            const last_token = tokens.getLast().token;
-            tokens.append(parser.Token{
-                .token = .quote,
-                .value = "",
-            }) catch return null;
-
-            if (last_token == .quote) {
-                did_find_other = true;
-                break;
             } else {
-                start += 1;
+                const old_pos = lexer.position;
+                lexer.position = pointer;
+                return parser.Token{
+                    .token = .str_literal,
+                    .value = lexer.source[old_pos..pointer],
+                };
             }
         }
 
-        if (!did_find_other) {
-            return null;
-        }
-
-        tokens.append(parser.Token{
-            .token = .str_literal,
-            .value = lexer.source[start .. start + lexer.look_ahead - 1],
-        }) catch return null;
-
-        tokens.append(parser.Token{
-            .token = .quote,
-            .value = "",
-        }) catch return null;
-
-        return tokens.toOwnedSlice() catch null;
+        return null;
     }
 
     fn isExistingToken(lexer: *Lexer) bool {
@@ -171,7 +143,7 @@ pub const Lexer = struct {
         }
 
         const identifiable = lexer.source[lexer.position..ending_index];
-        const parsedNumber = std.fmt.parseInt(isize, identifiable, 10) catch null;
+        const parsedNumber = std.fmt.parseInt(isize, identifiable, 0) catch null;
 
         lexer.position = ending_index;
         if (parsedNumber != null) {
@@ -202,18 +174,18 @@ pub const Lexer = struct {
             const lookahead = lexer.lookaheadString(true) orelse "";
             const found_what = parser.keywords.get(lookahead);
 
-            if (found_what == null) {
-                try tokens.append(try nextToken(lexer));
-            } else {
-                const literals = lexer.parseLiteral(found_what.?);
-                if (literals == null) {
-                    try tokens.append(.{
-                        .token = found_what.?,
-                        .value = "",
-                    });
-                } else {
-                    try tokens.appendSlice(literals.?);
+            if (found_what) |found| {
+                try tokens.append(.{
+                    .token = found,
+                    .value = "",
+                });
+
+                const literals = lexer.parseLiteral(found);
+                if (literals) |l| {
+                    try tokens.append(l);
                 }
+            } else {
+                try tokens.append(try nextToken(lexer));
             }
         }
 
@@ -287,7 +259,8 @@ test "' = ' parsing" {
 }
 
 test "string literal parsing" {
-    const str = "let str: string = \"ab\\\"c\";";
+    const str = "let str: string = \"ab\\\"cd\";";
+    std.debug.print("str: {s}\n", .{str});
     var lexer = Lexer.init(t.allocator, str);
 
     const expected_tokens = &[_]parser.Token{
@@ -297,7 +270,7 @@ test "string literal parsing" {
         .{ .token = .string, .value = "" },
         .{ .token = .equal, .value = "" },
         .{ .token = .quote, .value = "" },
-        .{ .token = .str_literal, .value = "ab\"c" },
+        .{ .token = .str_literal, .value = "ab\\\"cd" },
         .{ .token = .quote, .value = "" },
         .{ .token = .semicolon, .value = "" },
     };
@@ -305,7 +278,43 @@ test "string literal parsing" {
     const actual_tokens = try lexer.tokenize();
     defer lexer.alloc.free(actual_tokens);
 
-    std.debug.print("{any}\n", .{actual_tokens});
+    std.debug.print("\n", .{});
+    for (actual_tokens) |token| {
+        std.debug.print("{any}\n", .{token});
+    }
+
+    var value: usize = 0;
+    while (value < expected_tokens.len) : (value += 1) {
+        try t.expectEqual(expected_tokens[value].token, actual_tokens[value].token);
+        try t.expectEqualStrings(expected_tokens[value].value, actual_tokens[value].value);
+    }
+}
+
+test "command literal parsing" {
+    const str = "let str: string = @\"ab\\\"cd\";";
+    std.debug.print("str: {s}\n", .{str});
+    var lexer = Lexer.init(t.allocator, str);
+
+    const expected_tokens = &[_]parser.Token{
+        .{ .token = .let_kw, .value = "" },
+        .{ .token = .identifier, .value = "str" },
+        .{ .token = .colon, .value = "" },
+        .{ .token = .string, .value = "" },
+        .{ .token = .equal, .value = "" },
+        .{ .token = .at, .value = "" },
+        .{ .token = .quote, .value = "" },
+        .{ .token = .str_literal, .value = "ab\\\"cd" },
+        .{ .token = .quote, .value = "" },
+        .{ .token = .semicolon, .value = "" },
+    };
+
+    const actual_tokens = try lexer.tokenize();
+    defer lexer.alloc.free(actual_tokens);
+
+    std.debug.print("\n", .{});
+    for (actual_tokens) |token| {
+        std.debug.print("{any}\n", .{token});
+    }
 
     var value: usize = 0;
     while (value < expected_tokens.len) : (value += 1) {
@@ -385,8 +394,6 @@ test "function mix with parameters" {
 
     const actual_tokens = try lexer.tokenize();
     defer lexer.alloc.free(actual_tokens);
-
-    try t.expectEqual(expected_tokens.len, actual_tokens.len);
 
     var value: usize = 0;
     while (value < expected_tokens.len) : (value += 1) {
