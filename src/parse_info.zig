@@ -20,6 +20,29 @@ pub const TokenType = enum(u8) {
     // Literal
     quote,
 
+    // Arithmetic
+    plus, // +
+    minus, // -
+    divide, // /
+    multiply, // *
+    modulo, // %
+
+    // Stream
+    pipe_next, // |>
+    pipe_err, // ~>
+
+    // Comparison
+    equality, // ==
+    n_equality, // !=
+    less, // <
+    less_eq, // <=
+    greater, // >
+    greater_eq, // >=
+
+    // Logic
+    log_or, // ||
+    log_and, // &&
+
     // Operator like
     operator, // see Operator
     dot, // .
@@ -28,6 +51,13 @@ pub const TokenType = enum(u8) {
     question, // ?
     bang, // !
     at, // @
+
+    // Bitwise
+    bit_or, // |
+    bit_and, // &
+    bit_shf_right, // >>
+    bit_shf_left, // <<
+    xor, // ^
 
     // Scopes
     left_paren, // (
@@ -56,83 +86,75 @@ pub const TokenType = enum(u8) {
     continue_kw, // continue
 };
 
-pub const OperatorType = enum {
-    // Arithmetic
-    plus, // +
-    minus, // -
-    divide, // /
-    multiply, // *
-    modulo, // %
-
-    // ??
-    pipe_next, // |>
-    falsy, // !
-
-    // Comparison
-    equality, // ==
-    n_equality, // !=
-    less, // <
-    less_eq, // <=
-    greater, // >
-    greater_eq, // >=
-
-    // Logic
-    log_or, // ||
-    log_and, // &&
-};
-
-pub const BinaryType = enum {
-    // Bitwise
-    bit_or, // |
-    bit_and, // &
-    bit_shf_right, // >>
-    bit_shf_left, // <<
-    xor, // ^
-};
-
-const UnaryType = enum {
-    minus, // -
-    plus, // +
-    not, // ~
-};
-
 pub const keywords = std.ComptimeStringMap(TokenType, .{
-    // Operator like
-    .{ ".", .dot },
-    .{ ",", .comma },
-    .{ ";", .semicolon },
-    .{ "?", .question },
-    .{ "!", .bang },
-    .{ "@", .at },
+    .{ "number", .number }, // <int>
+    .{ "string", .string }, // <string> (type)
 
     // Literal
-    .{ "\"", .quote },
+    .{ "\"", .quote }, // """
+
+    // Arithmetic
+    .{ "+", .plus }, // +
+    .{ "-", .minus }, // -
+    .{ "/", .divide }, // /
+    .{ "*", .multiply }, // *
+    .{ "%", .modulo }, // %
+
+    // Stream
+    .{ " >", .pipe_next }, // |>
+    .{ "~>", .pipe_err }, // ~>
+
+    // Comparison
+    .{ "==", .equality }, // ==
+    .{ "!=", .n_equality }, // !=
+    .{ "<", .less }, // <
+    .{ "<=", .less_eq }, // <=
+    .{ ">", .greater }, // >
+    .{ ">=", .greater_eq }, // >=
+
+    // Logic
+    .{ "||", .log_or }, // ||
+    .{ "&&", .log_and }, // &&
+
+    // Operator like
+    .{ "Operator", .operator }, // see Operator
+    .{ ".", .dot }, // .
+    .{ ",", .comma }, // ,
+    .{ ";", .semicolon }, // ;
+    .{ "?", .question }, // ?
+    .{ "!", .bang }, // !
+    .{ "@", .at }, // @
+
+    // Bitwise
+    .{ "|", .bit_or }, // |
+    .{ "&", .bit_and }, // &
+    .{ ">>", .bit_shf_right }, // >>
+    .{ "<<", .bit_shf_left }, // <<
+    .{ "^", .xor }, // ^
 
     // Scopes
-    .{ "(", .left_paren },
-    .{ ")", .right_paren },
-    .{ "{", .left_brace },
-    .{ "}", .right_brace },
-    .{ "[", .left_bracket },
-    .{ "]", .right_bracket },
+    .{ "(", .left_paren }, // (
+    .{ ")", .right_paren }, // )
+    .{ "{", .left_brace }, // {
+    .{ "}", .right_brace }, // }
+    .{ "[", .left_bracket }, // [
+    .{ "]", .right_bracket }, // ]
 
     // Assignment
-    .{ "=", .equal },
-    .{ ":", .colon },
-    .{ "::", .fn_decl },
+    .{ "=", .equal }, // =
+    .{ ":", .colon }, // :
+    .{ "::", .fn_decl }, // ::
 
     // Keywords
-    .{ "break", .break_kw },
-    .{ "continue", .continue_kw },
-    .{ "else", .else_kw },
-    .{ "false", .false_kw },
-    .{ "for", .for_kw },
-    .{ "if", .if_kw },
-    .{ "let", .let_kw },
-    .{ "mut", .mut_kw },
-    .{ "number", .number },
-    .{ "return", .return_kw },
-    .{ "string", .string },
-    .{ "true", .true_kw },
-    .{ "while", .while_kw },
+    .{ "if", .if_kw }, // if
+    .{ "else", .else_kw }, // else
+    .{ "for", .for_kw }, // for
+    .{ "while", .while_kw }, // while
+    .{ "true", .true_kw }, // true
+    .{ "false", .false_kw }, // false
+    .{ "return", .return_kw }, // return
+    .{ "let", .let_kw }, // let
+    .{ "mut", .mut_kw }, // mut
+    .{ "break", .break_kw }, // break
+    .{ "continue", .continue_kw }, // continue
 });
