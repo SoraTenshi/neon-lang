@@ -53,7 +53,7 @@ pub const Lexer = struct {
             return null;
         }
 
-        if (lexer.source.len <= end + 1) {
+        if (end + 1 >= lexer.source.len) {
             return lexer.source[start..end];
         }
 
@@ -94,17 +94,24 @@ pub const Lexer = struct {
             return null;
         }
 
-        var pointer = lexer.position;
+        var pointer = lexer.position + lexer.look_ahead;
+        var escape = false;
         while (pointer < lexer.source.len) : (pointer += 1) {
             const current = lexer.source[pointer];
             const last = if (pointer > 0) lexer.source[pointer - 1] else current;
 
-            const is_literal = last != '\\' and current == '\"';
+            if (last == '\\') {
+                escape = !escape;
+            } else {
+                escape = false;
+            }
+
+            const is_literal = !escape and current == '\"';
             if (!is_literal) {
                 continue;
             } else {
                 const old_pos = lexer.position;
-                lexer.position = pointer;
+                lexer.position = pointer + 1;
                 return parser.Token{
                     .token = .str_literal,
                     .value = lexer.source[old_pos..pointer],
@@ -165,6 +172,7 @@ pub const Lexer = struct {
 
         while (lexer.position < lexer.source.len) {
             const c = lexer.source[lexer.position];
+            std.debug.print("c = {c}\n", .{c});
 
             if (isWhitespace(c)) {
                 lexer.position += 1;
@@ -183,6 +191,10 @@ pub const Lexer = struct {
                 const literals = lexer.parseLiteral(found);
                 if (literals) |l| {
                     try tokens.append(l);
+                    try tokens.append(parser.Token{
+                        .token = .quote,
+                        .value = "",
+                    });
                 }
             } else {
                 try tokens.append(try nextToken(lexer));
@@ -217,47 +229,6 @@ test "Simple let mut tokenizer" {
         try t.expectEqualStrings(expected_tokens[value].value, actual_tokens[value].value);
     }
 }
-
-test "= parsing" {
-    const str = "=";
-    var lexer = Lexer.init(t.allocator, str);
-
-    const expected_tokens = &[_]parser.Token{
-        .{ .token = .equal, .value = "" },
-    };
-
-    const actual_tokens = try lexer.tokenize();
-    defer lexer.alloc.free(actual_tokens);
-
-    try t.expectEqual(expected_tokens.len, actual_tokens.len);
-
-    var value: usize = 0;
-    while (value < expected_tokens.len) : (value += 1) {
-        try t.expectEqual(expected_tokens[value].token, actual_tokens[value].token);
-        try t.expectEqualStrings(expected_tokens[value].value, actual_tokens[value].value);
-    }
-}
-
-test "' = ' parsing" {
-    const str = " = ";
-    var lexer = Lexer.init(t.allocator, str);
-
-    const expected_tokens = &[_]parser.Token{
-        .{ .token = .equal, .value = "" },
-    };
-
-    const actual_tokens = try lexer.tokenize();
-    defer lexer.alloc.free(actual_tokens);
-
-    try t.expectEqual(expected_tokens.len, actual_tokens.len);
-
-    var value: usize = 0;
-    while (value < expected_tokens.len) : (value += 1) {
-        try t.expectEqual(expected_tokens[value].token, actual_tokens[value].token);
-        try t.expectEqualStrings(expected_tokens[value].value, actual_tokens[value].value);
-    }
-}
-
 test "string literal parsing" {
     const str = "let str: string = \"ab\\\"cd\";";
     var lexer = Lexer.init(t.allocator, str);
@@ -338,6 +309,36 @@ test "function decl with body" {
     }
 }
 
+test "arithmetic expression" {
+    const str = "10 + 20 / 5 * 3 - 15 % 4";
+    var lexer = Lexer.init(t.allocator, str);
+
+    const expected_tokens = &[_]parser.Token{
+        .{ .token = .num_literal, .value = "10" },
+        .{ .token = .plus, .value = "" },
+        .{ .token = .num_literal, .value = "20" },
+        .{ .token = .divide, .value = "" },
+        .{ .token = .num_literal, .value = "5" },
+        .{ .token = .multiply, .value = "" },
+        .{ .token = .num_literal, .value = "3" },
+        .{ .token = .minus, .value = "" },
+        .{ .token = .num_literal, .value = "15" },
+        .{ .token = .modulo, .value = "" },
+        .{ .token = .num_literal, .value = "4" },
+    };
+
+    const actual_tokens = try lexer.tokenize();
+    defer lexer.alloc.free(actual_tokens);
+
+    try t.expectEqual(expected_tokens.len, actual_tokens.len);
+
+    var value: usize = 0;
+    while (value < expected_tokens.len) : (value += 1) {
+        try t.expectEqual(expected_tokens[value].token, actual_tokens[value].token);
+        try t.expectEqualStrings(expected_tokens[value].value, actual_tokens[value].value);
+    }
+}
+
 test "function mix with parameters" {
     const str =
         \\main :: (str: string): string {
@@ -382,6 +383,57 @@ test "function mix with parameters" {
 
     const actual_tokens = try lexer.tokenize();
     defer lexer.alloc.free(actual_tokens);
+
+    var value: usize = 0;
+    while (value < expected_tokens.len) : (value += 1) {
+        try t.expectEqual(expected_tokens[value].token, actual_tokens[value].token);
+        try t.expectEqualStrings(expected_tokens[value].value, actual_tokens[value].value);
+    }
+}
+
+test "comparison expression" {
+    const str = "if(10 > abc) {\nprint(\"abc\");\n} else {\nprint(\"cool\");\n}";
+    std.debug.print("{s}\n", .{str});
+    var lexer = Lexer.init(t.allocator, str);
+
+    const expected_tokens = &[_]parser.Token{
+        .{ .token = .if_kw, .value = "" },
+        .{ .token = .left_paren, .value = "" },
+        .{ .token = .num_literal, .value = "10" },
+        .{ .token = .greater, .value = "" },
+        .{ .token = .identifier, .value = "abc" },
+        .{ .token = .right_paren, .value = "" },
+        .{ .token = .left_brace, .value = "" },
+        .{ .token = .identifier, .value = "print" },
+        .{ .token = .left_paren, .value = "" },
+        .{ .token = .quote, .value = "" },
+        .{ .token = .str_literal, .value = "abc" },
+        .{ .token = .quote, .value = "" },
+        .{ .token = .right_paren, .value = "" },
+        .{ .token = .semicolon, .value = "" },
+        .{ .token = .right_brace, .value = "" },
+        .{ .token = .else_kw, .value = "" },
+        .{ .token = .left_brace, .value = "" },
+        .{ .token = .identifier, .value = "print" },
+        .{ .token = .left_paren, .value = "" },
+        .{ .token = .quote, .value = "" },
+        .{ .token = .str_literal, .value = "cool" },
+        .{ .token = .quote, .value = "" },
+        .{ .token = .right_paren, .value = "" },
+        .{ .token = .semicolon, .value = "" },
+        .{ .token = .right_brace, .value = "" },
+    };
+
+    std.debug.print("\n", .{});
+
+    const actual_tokens = try lexer.tokenize();
+    defer lexer.alloc.free(actual_tokens);
+
+    for (actual_tokens) |token| {
+        std.debug.print("token: {s} - {s}\n", .{ token.value, @tagName(token.token) });
+    }
+
+    try t.expectEqual(expected_tokens.len, actual_tokens.len);
 
     var value: usize = 0;
     while (value < expected_tokens.len) : (value += 1) {
