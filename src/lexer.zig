@@ -172,7 +172,6 @@ pub const Lexer = struct {
 
         while (lexer.position < lexer.source.len) {
             const c = lexer.source[lexer.position];
-            std.debug.print("c = {c}\n", .{c});
 
             if (isWhitespace(c)) {
                 lexer.position += 1;
@@ -393,7 +392,6 @@ test "function mix with parameters" {
 
 test "comparison expression" {
     const str = "if(10 > abc) {\nprint(\"abc\");\n} else {\nprint(\"cool\");\n}";
-    std.debug.print("{s}\n", .{str});
     var lexer = Lexer.init(t.allocator, str);
 
     const expected_tokens = &[_]parser.Token{
@@ -424,14 +422,8 @@ test "comparison expression" {
         .{ .token = .right_brace, .value = "" },
     };
 
-    std.debug.print("\n", .{});
-
     const actual_tokens = try lexer.tokenize();
     defer lexer.alloc.free(actual_tokens);
-
-    for (actual_tokens) |token| {
-        std.debug.print("token: {s} - {s}\n", .{ token.value, @tagName(token.token) });
-    }
 
     try t.expectEqual(expected_tokens.len, actual_tokens.len);
 
