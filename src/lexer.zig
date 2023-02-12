@@ -9,6 +9,7 @@ const isWhitespace = std.ascii.isWhitespace;
 
 pub const LexerError = error{
     InvalidToken,
+    InvalidIdentifier,
 };
 
 pub const Lexer = struct {
@@ -159,6 +160,12 @@ pub const Lexer = struct {
                 .value = identifiable,
             };
         } else {
+            for (identifiable) |current| {
+                const is_dash_char = (current == '-' or current == '_');
+                if (!std.ascii.isAlphanumeric(current) and !is_dash_char) {
+                    return LexerError.InvalidIdentifier;
+                }
+            }
             return parser.Token{
                 .token = .identifier,
                 .value = identifiable,

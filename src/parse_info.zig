@@ -101,7 +101,7 @@ pub const keywords = std.ComptimeStringMap(TokenType, .{
     .{ "%", .modulo }, // %
 
     // Stream
-    .{ " >", .pipe_next }, // |>
+    .{ "|>", .pipe_next }, // |>
     .{ "~>", .pipe_err }, // ~>
 
     // Comparison
