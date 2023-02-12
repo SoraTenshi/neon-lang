@@ -10,6 +10,7 @@ const isWhitespace = std.ascii.isWhitespace;
 pub const LexerError = error{
     InvalidToken,
     InvalidIdentifier,
+    NoMatchingQuote,
 };
 
 pub const Lexer = struct {
@@ -90,7 +91,7 @@ pub const Lexer = struct {
         return result;
     }
 
-    fn parseLiteral(lexer: *Lexer, token: parser.TokenType) ?parser.Token {
+    fn parseLiteral(lexer: *Lexer, token: parser.TokenType) LexerError!?parser.Token {
         if (token != .quote) {
             return null;
         }
@@ -99,6 +100,11 @@ pub const Lexer = struct {
         var escape = false;
         while (pointer < lexer.source.len) : (pointer += 1) {
             const current = lexer.source[pointer];
+
+            if (current == '\r' or current == '\n') {
+                return LexerError.NoMatchingQuote;
+            }
+
             const last = if (pointer > 0) lexer.source[pointer - 1] else current;
 
             if (last == '\\') {
@@ -194,7 +200,7 @@ pub const Lexer = struct {
                     .value = "",
                 });
 
-                const literals = lexer.parseLiteral(found);
+                const literals = try lexer.parseLiteral(found);
                 if (literals) |l| {
                     try tokens.append(l);
                     try tokens.append(parser.Token{
