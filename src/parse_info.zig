@@ -4,6 +4,8 @@ const t = std.testing;
 pub const Token = struct {
     token: TokenType,
     value: []const u8,
+    start: usize,
+    end: usize,
 };
 
 pub const TokenType = enum(u8) {
