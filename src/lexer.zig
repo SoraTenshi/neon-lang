@@ -52,7 +52,7 @@ pub const Lexer = struct {
 
         _ = std.meta.stringToEnum(parser.TokenType, lexer.source[start..end]) orelse return null;
 
-        if (end + 1 >= lexer.source.len) {
+        if (end + 1 > lexer.source.len) {
             return lexer.source[start..end];
         }
 
@@ -319,6 +319,33 @@ test "function decl with body" {
 
     const actual_tokens = try lexer.tokenize();
     defer lexer.alloc.free(actual_tokens);
+
+    try t.expectEqual(expected_tokens.len, actual_tokens.len);
+
+    var value: usize = 0;
+    while (value < expected_tokens.len) : (value += 1) {
+        try t.expectEqual(expected_tokens[value].token, actual_tokens[value].token);
+        try t.expectEqualStrings(expected_tokens[value].value, actual_tokens[value].value);
+    }
+}
+
+test "invalid token sequence" {
+    const str = "++/::";
+    var lexer = Lexer.init(t.allocator, str);
+
+    const expected_tokens = &[_]parser.Token{
+        .{ .token = .@"+", .value = "", .start = 0, .end = 0 },
+        .{ .token = .@"+", .value = "", .start = 1, .end = 1 },
+        .{ .token = .@"/", .value = "", .start = 2, .end = 2 },
+        .{ .token = .@"::", .value = "", .start = 3, .end = 5 },
+    };
+
+    const actual_tokens = try lexer.tokenize();
+    defer lexer.alloc.free(actual_tokens);
+
+    for (actual_tokens) |token| {
+        std.debug.print("token: {any}\n", .{token});
+    }
 
     try t.expectEqual(expected_tokens.len, actual_tokens.len);
 
