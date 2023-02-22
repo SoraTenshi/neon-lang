@@ -50,17 +50,14 @@ pub const Lexer = struct {
         const start = lexer.position + lexer.look_ahead;
         var end = start + 1;
 
-        var has_token = parser.keywords.has(lexer.source[start..end]);
-        if (!has_token) {
-            return null;
-        }
+        _ = std.meta.stringToEnum(parser.TokenType, lexer.source[start..end]) orelse return null;
 
         if (end + 1 >= lexer.source.len) {
             return lexer.source[start..end];
         }
 
-        const is_multi_token = parser.keywords.has(lexer.source[start .. end + 1]);
-        if (is_multi_token) {
+        const is_multi_token = std.meta.stringToEnum(parser.TokenType, lexer.source[start .. end + 1]);
+        if (is_multi_token != null) {
             end += 1;
         }
 
@@ -199,7 +196,7 @@ pub const Lexer = struct {
             }
 
             const lookahead = lexer.lookaheadString(true) orelse "";
-            const found_what = parser.keywords.get(lookahead);
+            const found_what = std.meta.stringToEnum(parser.TokenType, lookahead);
 
             if (found_what) |found| {
                 try tokens.append(.{
