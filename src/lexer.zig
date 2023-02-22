@@ -92,7 +92,7 @@ pub const Lexer = struct {
     }
 
     fn parseLiteral(lexer: *Lexer, token: parser.TokenType) LexerError!?parser.Token {
-        if (token != .quote) {
+        if (token != .@"\"") {
             return null;
         }
 
@@ -213,7 +213,7 @@ pub const Lexer = struct {
                 if (literals) |l| {
                     try tokens.append(l);
                     try tokens.append(parser.Token{
-                        .token = .quote,
+                        .token = .@"\"",
                         .value = "",
                         .start = lexer.position,
                         .end = lexer.position,
@@ -233,12 +233,12 @@ test "Simple let mut tokenizer" {
     var lexer = Lexer.init(t.allocator, str);
 
     const expected_tokens = &[_]parser.Token{
-        .{ .token = .let_kw, .value = "", .start = 0, .end = 2 },
-        .{ .token = .mut_kw, .value = "", .start = 4, .end = 7 },
+        .{ .token = .let, .value = "", .start = 0, .end = 2 },
+        .{ .token = .mut, .value = "", .start = 4, .end = 7 },
         .{ .token = .identifier, .value = "abc", .start = 9, .end = 12 },
-        .{ .token = .equal, .value = "", .start = 14, .end = 14 },
+        .{ .token = .@"=", .value = "", .start = 14, .end = 14 },
         .{ .token = .num_literal, .value = "1337", .start = 16, .end = 20 },
-        .{ .token = .semicolon, .value = "", .start = 21, .end = 21 },
+        .{ .token = .@";", .value = "", .start = 21, .end = 21 },
     };
 
     const actual_tokens = try lexer.tokenize();
@@ -257,15 +257,15 @@ test "string literal parsing" {
     var lexer = Lexer.init(t.allocator, str);
 
     const expected_tokens = &[_]parser.Token{
-        .{ .token = .let_kw, .value = "", .start = 0, .end = 2 },
+        .{ .token = .let, .value = "", .start = 0, .end = 2 },
         .{ .token = .identifier, .value = "str", .start = 4, .end = 7 },
-        .{ .token = .colon, .value = "", .start = 8, .end = 8 },
+        .{ .token = .@":", .value = "", .start = 8, .end = 8 },
         .{ .token = .string, .value = "", .start = 10, .end = 15 },
-        .{ .token = .equal, .value = "", .start = 17, .end = 17 },
-        .{ .token = .quote, .value = "", .start = 19, .end = 19 },
+        .{ .token = .@"=", .value = "", .start = 17, .end = 17 },
+        .{ .token = .@"\"", .value = "", .start = 19, .end = 19 },
         .{ .token = .str_literal, .value = "ab\\\"cd", .start = 20, .end = 27 },
-        .{ .token = .quote, .value = "", .start = 28, .end = 28 },
-        .{ .token = .semicolon, .value = "", .start = 29, .end = 29 },
+        .{ .token = .@"\"", .value = "", .start = 28, .end = 28 },
+        .{ .token = .@";", .value = "", .start = 29, .end = 29 },
     };
 
     const actual_tokens = try lexer.tokenize();
@@ -283,16 +283,16 @@ test "command literal parsing" {
     var lexer = Lexer.init(t.allocator, str);
 
     const expected_tokens = &[_]parser.Token{
-        .{ .token = .let_kw, .value = "", .start = 0, .end = 2 },
+        .{ .token = .let, .value = "", .start = 0, .end = 2 },
         .{ .token = .identifier, .value = "str", .start = 4, .end = 6 },
-        .{ .token = .colon, .value = "", .start = 7, .end = 7 },
+        .{ .token = .@":", .value = "", .start = 7, .end = 7 },
         .{ .token = .string, .value = "", .start = 9, .end = 14 },
-        .{ .token = .equal, .value = "", .start = 16, .end = 16 },
-        .{ .token = .at, .value = "", .start = 18, .end = 18 },
-        .{ .token = .quote, .value = "", .start = 19, .end = 19 },
+        .{ .token = .@"=", .value = "", .start = 16, .end = 16 },
+        .{ .token = .@"@", .value = "", .start = 18, .end = 18 },
+        .{ .token = .@"\"", .value = "", .start = 19, .end = 19 },
         .{ .token = .str_literal, .value = "ab\\\"cd", .start = 20, .end = 27 },
-        .{ .token = .quote, .value = "", .start = 28, .end = 28 },
-        .{ .token = .semicolon, .value = "", .start = 29, .end = 29 },
+        .{ .token = .@"\"", .value = "", .start = 28, .end = 28 },
+        .{ .token = .@";", .value = "", .start = 29, .end = 29 },
     };
 
     const actual_tokens = try lexer.tokenize();
@@ -311,13 +311,13 @@ test "function decl with body" {
 
     const expected_tokens = &[_]parser.Token{
         .{ .token = .identifier, .value = "main", .start = 0, .end = 3 },
-        .{ .token = .fn_decl, .value = "", .start = 5, .end = 7 },
-        .{ .token = .left_paren, .value = "", .start = 8, .end = 8 },
-        .{ .token = .right_paren, .value = "", .start = 9, .end = 9 },
-        .{ .token = .colon, .value = "", .start = 11, .end = 11 },
+        .{ .token = .@"::", .value = "", .start = 5, .end = 7 },
+        .{ .token = .@"(", .value = "", .start = 8, .end = 8 },
+        .{ .token = .@")", .value = "", .start = 9, .end = 9 },
+        .{ .token = .@":", .value = "", .start = 11, .end = 11 },
         .{ .token = .string, .value = "", .start = 13, .end = 18 },
-        .{ .token = .left_brace, .value = "", .start = 20, .end = 20 },
-        .{ .token = .right_brace, .value = "", .start = 22, .end = 22 },
+        .{ .token = .@"{", .value = "", .start = 20, .end = 20 },
+        .{ .token = .@"}", .value = "", .start = 22, .end = 22 },
     };
 
     const actual_tokens = try lexer.tokenize();
@@ -338,15 +338,15 @@ test "arithmetic expression" {
 
     const expected_tokens = &[_]parser.Token{
         .{ .token = .num_literal, .value = "10", .start = 0, .end = 1 },
-        .{ .token = .plus, .value = "", .start = 3, .end = 3 },
+        .{ .token = .@"+", .value = "", .start = 3, .end = 3 },
         .{ .token = .num_literal, .value = "20", .start = 5, .end = 6 },
-        .{ .token = .divide, .value = "", .start = 8, .end = 8 },
+        .{ .token = .@"/", .value = "", .start = 8, .end = 8 },
         .{ .token = .num_literal, .value = "5", .start = 10, .end = 11 },
-        .{ .token = .multiply, .value = "", .start = 13, .end = 13 },
+        .{ .token = .@"*", .value = "", .start = 13, .end = 13 },
         .{ .token = .num_literal, .value = "3", .start = 15, .end = 16 },
-        .{ .token = .minus, .value = "", .start = 18, .end = 18 },
+        .{ .token = .@"-", .value = "", .start = 18, .end = 18 },
         .{ .token = .num_literal, .value = "15", .start = 20, .end = 22 },
-        .{ .token = .modulo, .value = "", .start = 24, .end = 24 },
+        .{ .token = .@"%", .value = "", .start = 24, .end = 24 },
         .{ .token = .num_literal, .value = "4", .start = 26, .end = 27 },
     };
 
@@ -374,34 +374,34 @@ test "function mix with parameters" {
 
     const expected_tokens = &[_]parser.Token{
         .{ .token = .identifier, .value = "main", .start = 0, .end = 3 },
-        .{ .token = .fn_decl, .value = "", .start = 5, .end = 7 },
-        .{ .token = .left_paren, .value = "", .start = 8, .end = 8 },
+        .{ .token = .@"::", .value = "", .start = 5, .end = 7 },
+        .{ .token = .@"(", .value = "", .start = 8, .end = 8 },
         .{ .token = .identifier, .value = "str", .start = 9, .end = 11 },
-        .{ .token = .colon, .value = "", .start = 12, .end = 12 },
+        .{ .token = .@":", .value = "", .start = 12, .end = 12 },
         .{ .token = .string, .value = "", .start = 13, .end = 19 },
-        .{ .token = .right_paren, .value = "", .start = 20, .end = 20 },
-        .{ .token = .colon, .value = "", .start = 21, .end = 21 },
+        .{ .token = .@")", .value = "", .start = 20, .end = 20 },
+        .{ .token = .@":", .value = "", .start = 21, .end = 21 },
         .{ .token = .string, .value = "", .start = 22, .end = 28 },
-        .{ .token = .left_brace, .value = "", .start = 29, .end = 29 },
-        .{ .token = .if_kw, .value = "", .start = 31, .end = 33 },
-        .{ .token = .left_paren, .value = "", .start = 34, .end = 34 },
-        .{ .token = .bang, .value = "", .start = 35, .end = 35 },
+        .{ .token = .@"{", .value = "", .start = 29, .end = 29 },
+        .{ .token = .@"if", .value = "", .start = 31, .end = 33 },
+        .{ .token = .@"(", .value = "", .start = 34, .end = 34 },
+        .{ .token = .@"!", .value = "", .start = 35, .end = 35 },
         .{ .token = .identifier, .value = "str", .start = 36, .end = 38 },
-        .{ .token = .dot, .value = "", .start = 39, .end = 39 },
+        .{ .token = .@".", .value = "", .start = 39, .end = 39 },
         .{ .token = .identifier, .value = "empty", .start = 40, .end = 44 },
-        .{ .token = .left_paren, .value = "", .start = 45, .end = 45 },
-        .{ .token = .right_paren, .value = "", .start = 46, .end = 46 },
-        .{ .token = .right_paren, .value = "", .start = 47, .end = 47 },
-        .{ .token = .left_brace, .value = "", .start = 48, .end = 48 },
+        .{ .token = .@"(", .value = "", .start = 45, .end = 45 },
+        .{ .token = .@")", .value = "", .start = 46, .end = 46 },
+        .{ .token = .@")", .value = "", .start = 47, .end = 47 },
+        .{ .token = .@"{", .value = "", .start = 48, .end = 48 },
         .{ .token = .identifier, .value = "print", .start = 50, .end = 54 },
-        .{ .token = .left_paren, .value = "", .start = 55, .end = 55 },
-        .{ .token = .quote, .value = "", .start = 56, .end = 56 },
+        .{ .token = .@"(", .value = "", .start = 55, .end = 55 },
+        .{ .token = .@"\"", .value = "", .start = 56, .end = 56 },
         .{ .token = .str_literal, .value = "Not Empty", .start = 57, .end = 65 },
-        .{ .token = .quote, .value = "", .start = 66, .end = 66 },
-        .{ .token = .right_paren, .value = "", .start = 67, .end = 67 },
-        .{ .token = .semicolon, .value = "", .start = 68, .end = 68 },
-        .{ .token = .right_brace, .value = "", .start = 70, .end = 70 },
-        .{ .token = .right_brace, .value = "", .start = 72, .end = 72 },
+        .{ .token = .@"\"", .value = "", .start = 66, .end = 66 },
+        .{ .token = .@")", .value = "", .start = 67, .end = 67 },
+        .{ .token = .@";", .value = "", .start = 68, .end = 68 },
+        .{ .token = .@"}", .value = "", .start = 70, .end = 70 },
+        .{ .token = .@"}", .value = "", .start = 72, .end = 72 },
     };
 
     const actual_tokens = try lexer.tokenize();
@@ -419,31 +419,31 @@ test "comparison expression" {
     var lexer = Lexer.init(t.allocator, str);
 
     const expected_tokens = &[_]parser.Token{
-        .{ .token = .if_kw, .value = "", .start = 0, .end = 1 },
-        .{ .token = .left_paren, .value = "", .start = 2, .end = 2 },
+        .{ .token = .@"if", .value = "", .start = 0, .end = 1 },
+        .{ .token = .@"(", .value = "", .start = 2, .end = 2 },
         .{ .token = .num_literal, .value = "10", .start = 3, .end = 4 },
-        .{ .token = .greater, .value = "", .start = 5, .end = 6 },
+        .{ .token = .@">", .value = "", .start = 5, .end = 6 },
         .{ .token = .identifier, .value = "abc", .start = 7, .end = 9 },
-        .{ .token = .right_paren, .value = "", .start = 10, .end = 10 },
-        .{ .token = .left_brace, .value = "", .start = 11, .end = 11 },
+        .{ .token = .@")", .value = "", .start = 10, .end = 10 },
+        .{ .token = .@"{", .value = "", .start = 11, .end = 11 },
         .{ .token = .identifier, .value = "print", .start = 13, .end = 17 },
-        .{ .token = .left_paren, .value = "", .start = 18, .end = 18 },
-        .{ .token = .quote, .value = "", .start = 19, .end = 19 },
+        .{ .token = .@"(", .value = "", .start = 18, .end = 18 },
+        .{ .token = .@"\"", .value = "", .start = 19, .end = 19 },
         .{ .token = .str_literal, .value = "abc", .start = 20, .end = 22 },
-        .{ .token = .quote, .value = "", .start = 23, .end = 23 },
-        .{ .token = .right_paren, .value = "", .start = 24, .end = 24 },
-        .{ .token = .semicolon, .value = "", .start = 25, .end = 25 },
-        .{ .token = .right_brace, .value = "", .start = 27, .end = 27 },
-        .{ .token = .else_kw, .value = "", .start = 29, .end = 32 },
-        .{ .token = .left_brace, .value = "", .start = 33, .end = 33 },
+        .{ .token = .@"\"", .value = "", .start = 23, .end = 23 },
+        .{ .token = .@")", .value = "", .start = 24, .end = 24 },
+        .{ .token = .@";", .value = "", .start = 25, .end = 25 },
+        .{ .token = .@"}", .value = "", .start = 27, .end = 27 },
+        .{ .token = .@"else", .value = "", .start = 29, .end = 32 },
+        .{ .token = .@"{", .value = "", .start = 33, .end = 33 },
         .{ .token = .identifier, .value = "print", .start = 35, .end = 39 },
-        .{ .token = .left_paren, .value = "", .start = 40, .end = 40 },
-        .{ .token = .quote, .value = "", .start = 41, .end = 41 },
+        .{ .token = .@"(", .value = "", .start = 40, .end = 40 },
+        .{ .token = .@"\"", .value = "", .start = 41, .end = 41 },
         .{ .token = .str_literal, .value = "cool", .start = 42, .end = 45 },
-        .{ .token = .quote, .value = "", .start = 46, .end = 46 },
-        .{ .token = .right_paren, .value = "", .start = 47, .end = 47 },
-        .{ .token = .semicolon, .value = "", .start = 48, .end = 48 },
-        .{ .token = .right_brace, .value = "", .start = 50, .end = 50 },
+        .{ .token = .@"\"", .value = "", .start = 46, .end = 46 },
+        .{ .token = .@")", .value = "", .start = 47, .end = 47 },
+        .{ .token = .@";", .value = "", .start = 48, .end = 48 },
+        .{ .token = .@"}", .value = "", .start = 50, .end = 50 },
     };
 
     const actual_tokens = try lexer.tokenize();
