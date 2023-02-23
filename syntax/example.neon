@@ -18,11 +18,11 @@ main :: (): int {
   // calling functions with "." is always pure, therefore no error handling required
   c.map() // iterate through the string
     // stream result yield to another_function
-    |> another_function() ~> _ // ~> redirects the stderr input.
+    |> another_function() ~> ignore // ~> redirects the stderr input.
     // ignore just ignores it, we don't want to handle that error
 
     // now we have a streaming string that gets passed to the next function (if we wish to do so)
-    |> _;
+    |> ignore;
 
   cond(b) { // this is the default branching behaviour. works with all literal types
     true => "true",
@@ -33,3 +33,7 @@ main :: (): int {
   return @"fail" ~> exit(1) // something failed.
     |> exit(0);
 }
+
+// just call main
+main()
+
