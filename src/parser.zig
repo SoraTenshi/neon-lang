@@ -10,16 +10,21 @@ const Range = struct {
     end: usize,
 };
 
+// TODO: think about the pipes
 const Type = enum {
     Variable,
     Literal,
     Function,
 };
 
+// TODO: investigate whether it makes sense to create new enum types based on the
+// token? like unary ops, pipes, basically any token that may have any influence
+// on the AST.
 pub const AstNode = struct {
     node_type: Type,
     range: Range,
     depth: usize,
+    // TODO: does this even work the way i expect?
     content: union(Type) {
         Function: struct {
             name: []const u8,
@@ -57,6 +62,7 @@ pub const Ast = struct {
         if (root != null) {
             return;
         }
+        // TODO: implement
         for (self.tokens) |_| {}
     }
 };
