@@ -1,0 +1,35 @@
+// no support for modules yet.
+// also no support for imports, yet.
+// standard library (if that ever happens..) will be imported by default (via interpretation)
+
+// all functions are in the same file for now, therefore no visibility required
+another_function :: (input: string): string {
+  return @input; // the '@' operator spawns a new process that executes and returns a "stream" 
+}
+
+main :: (): int {
+  // let mut declaration and initialization
+  let mut a: int = 1337;
+
+  // let is by default immutable
+  let b: bool = true;
+  let c: string = "echo \"Example invoke!\"";
+
+  // calling functions with "." is always pure, therefore no error handling required
+  c.map() // iterate through the string
+    // stream result yield to another_function
+    |> another_function() ~> _ // ~> redirects the stderr input.
+    // ignore just ignores it, we don't want to handle that error
+
+    // now we have a streaming string that gets passed to the next function (if we wish to do so)
+    |> _;
+
+  cond(b) { // this is the default branching behaviour. works with all literal types
+    true => "true",
+    false => "false",
+  }
+
+  // the '@' operator can also be directly invoked via a literal
+  return @"fail" ~> exit(1) // something failed.
+    |> exit(0);
+}

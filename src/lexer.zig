@@ -67,11 +67,11 @@ pub const Lexer = struct {
     fn lookaheadString(lexer: *Lexer, consume: bool) ?[]const u8 {
         const c = lexer.source[lexer.position + lexer.look_ahead];
         const result = switch (c) {
-            'b' => lexer.findToken("break"),
-            'c' => lexer.findToken("continue"),
+            'b' => lexer.findToken("bool"),
+            'c' => lexer.findToken("cond"),
             'e' => lexer.findToken("else"),
-            'f' => if (lexer.findToken("for") == null) "for" else lexer.findToken("false"),
-            'i' => lexer.findToken("if"),
+            'f' => lexer.findToken("false"),
+            'i' => lexer.findToken("ignore"),
             'l' => lexer.findToken("let"),
             'm' => lexer.findToken("mut"),
             'n' => lexer.findToken("number"),
@@ -130,7 +130,7 @@ pub const Lexer = struct {
 
     fn isExistingToken(lexer: *Lexer) bool {
         const current_index = lexer.position + lexer.look_ahead;
-        if (current_index >= lexer.source.len) {
+        if (current_index > lexer.source.len) {
             return false;
         }
 
@@ -169,7 +169,7 @@ pub const Lexer = struct {
             };
         } else {
             for (identifiable) |current| {
-                const is_dash_char = (current == '-' or current == '_');
+                const is_dash_char = current == '-' and current == '_';
                 if (!std.ascii.isAlphanumeric(current) and !is_dash_char) {
                     return LexerError.InvalidIdentifier;
                 }
@@ -217,7 +217,9 @@ pub const Lexer = struct {
                     });
                 }
             } else {
-                try tokens.append(try nextToken(lexer));
+                const next_token = try nextToken(lexer);
+                std.debug.print("found {any} at position: {d} to {d}\n", .{ next_token, lexer.position, lexer.position + lexer.look_ahead });
+                try tokens.append(next_token);
             }
         }
 
@@ -343,10 +345,6 @@ test "invalid token sequence" {
     const actual_tokens = try lexer.tokenize();
     defer lexer.alloc.free(actual_tokens);
 
-    for (actual_tokens) |token| {
-        std.debug.print("token: {any}\n", .{token});
-    }
-
     try t.expectEqual(expected_tokens.len, actual_tokens.len);
 
     var value: usize = 0;
@@ -389,11 +387,13 @@ test "arithmetic expression" {
 test "function mix with parameters" {
     const str =
         \\main :: (str: string): string {
-        \\    if(!str.empty()) {
-        \\        print("Not Empty");
+        \\    cond(!str.empty()) {
+        \\        true => print("Not Empty"),
+        \\        false => ignore,
         \\    }
         \\}
     ;
+
     var lexer = Lexer.init(t.allocator, str);
 
     const expected_tokens = &[_]parser.Token{
@@ -402,30 +402,36 @@ test "function mix with parameters" {
         .{ .token = .@"(", .value = "", .start = 8, .end = 8 },
         .{ .token = .identifier, .value = "str", .start = 9, .end = 11 },
         .{ .token = .@":", .value = "", .start = 12, .end = 12 },
-        .{ .token = .string, .value = "", .start = 13, .end = 19 },
-        .{ .token = .@")", .value = "", .start = 20, .end = 20 },
-        .{ .token = .@":", .value = "", .start = 21, .end = 21 },
-        .{ .token = .string, .value = "", .start = 22, .end = 28 },
-        .{ .token = .@"{", .value = "", .start = 29, .end = 29 },
-        .{ .token = .@"if", .value = "", .start = 31, .end = 33 },
-        .{ .token = .@"(", .value = "", .start = 34, .end = 34 },
-        .{ .token = .@"!", .value = "", .start = 35, .end = 35 },
-        .{ .token = .identifier, .value = "str", .start = 36, .end = 38 },
-        .{ .token = .@".", .value = "", .start = 39, .end = 39 },
-        .{ .token = .identifier, .value = "empty", .start = 40, .end = 44 },
-        .{ .token = .@"(", .value = "", .start = 45, .end = 45 },
+        .{ .token = .string, .value = "", .start = 13, .end = 18 },
+        .{ .token = .@")", .value = "", .start = 19, .end = 19 },
+        .{ .token = .@":", .value = "", .start = 20, .end = 20 },
+        .{ .token = .string, .value = "", .start = 21, .end = 26 },
+        .{ .token = .@"{", .value = "", .start = 27, .end = 27 },
+        .{ .token = .cond, .value = "", .start = 29, .end = 32 },
+        .{ .token = .@"(", .value = "", .start = 33, .end = 33 },
+        .{ .token = .@"!", .value = "", .start = 34, .end = 34 },
+        .{ .token = .identifier, .value = "str", .start = 35, .end = 37 },
+        .{ .token = .@".", .value = "", .start = 38, .end = 38 },
+        .{ .token = .identifier, .value = "empty", .start = 39, .end = 43 },
+        .{ .token = .@"(", .value = "", .start = 44, .end = 44 },
+        .{ .token = .@")", .value = "", .start = 45, .end = 45 },
         .{ .token = .@")", .value = "", .start = 46, .end = 46 },
-        .{ .token = .@")", .value = "", .start = 47, .end = 47 },
         .{ .token = .@"{", .value = "", .start = 48, .end = 48 },
-        .{ .token = .identifier, .value = "print", .start = 50, .end = 54 },
-        .{ .token = .@"(", .value = "", .start = 55, .end = 55 },
-        .{ .token = .@"\"", .value = "", .start = 56, .end = 56 },
-        .{ .token = .str_literal, .value = "Not Empty", .start = 57, .end = 65 },
-        .{ .token = .@"\"", .value = "", .start = 66, .end = 66 },
-        .{ .token = .@")", .value = "", .start = 67, .end = 67 },
-        .{ .token = .@";", .value = "", .start = 68, .end = 68 },
-        .{ .token = .@"}", .value = "", .start = 70, .end = 70 },
-        .{ .token = .@"}", .value = "", .start = 72, .end = 72 },
+        .{ .token = .true, .value = "", .start = 50, .end = 53 },
+        .{ .token = .@"=>", .value = "", .start = 54, .end = 55 },
+        .{ .token = .identifier, .value = "print", .start = 57, .end = 61 },
+        .{ .token = .@"(", .value = "", .start = 62, .end = 62 },
+        .{ .token = .@"\"", .value = "", .start = 63, .end = 63 },
+        .{ .token = .str_literal, .value = "Not Empty", .start = 64, .end = 72 },
+        .{ .token = .@"\"", .value = "", .start = 73, .end = 73 },
+        .{ .token = .@")", .value = "", .start = 74, .end = 74 },
+        .{ .token = .@",", .value = "", .start = 68, .end = 68 },
+        .{ .token = .false, .value = "", .start = 69, .end = 74 },
+        .{ .token = .@"=>", .value = "", .start = 75, .end = 76 },
+        .{ .token = .ignore, .value = "", .start = 77, .end = 83 },
+        .{ .token = .@",", .value = "", .start = 84, .end = 84 },
+        .{ .token = .@"}", .value = "", .start = 85, .end = 85 },
+        .{ .token = .@"}", .value = "", .start = 86, .end = 86 },
     };
 
     const actual_tokens = try lexer.tokenize();
@@ -439,37 +445,42 @@ test "function mix with parameters" {
 }
 
 test "comparison expression" {
-    const str = "if(10 > abc) {\nprint(\"abc\");\n} else {\nprint(\"cool\");\n}";
+    const str =
+        \\cond(abc) {
+        \\    >10 => print("abc"),
+        \\    else => print("cool"),
+        \\}
+    ;
+
     var lexer = Lexer.init(t.allocator, str);
 
     const expected_tokens = &[_]parser.Token{
-        .{ .token = .@"if", .value = "", .start = 0, .end = 1 },
-        .{ .token = .@"(", .value = "", .start = 2, .end = 2 },
-        .{ .token = .num_literal, .value = "10", .start = 3, .end = 4 },
-        .{ .token = .@">", .value = "", .start = 5, .end = 6 },
-        .{ .token = .identifier, .value = "abc", .start = 7, .end = 9 },
-        .{ .token = .@")", .value = "", .start = 10, .end = 10 },
-        .{ .token = .@"{", .value = "", .start = 11, .end = 11 },
-        .{ .token = .identifier, .value = "print", .start = 13, .end = 17 },
-        .{ .token = .@"(", .value = "", .start = 18, .end = 18 },
-        .{ .token = .@"\"", .value = "", .start = 19, .end = 19 },
-        .{ .token = .str_literal, .value = "abc", .start = 20, .end = 22 },
-        .{ .token = .@"\"", .value = "", .start = 23, .end = 23 },
-        .{ .token = .@")", .value = "", .start = 24, .end = 24 },
-        .{ .token = .@";", .value = "", .start = 25, .end = 25 },
-        .{ .token = .@"}", .value = "", .start = 27, .end = 27 },
-        .{ .token = .@"else", .value = "", .start = 29, .end = 32 },
-        .{ .token = .@"{", .value = "", .start = 33, .end = 33 },
-        .{ .token = .identifier, .value = "print", .start = 35, .end = 39 },
-        .{ .token = .@"(", .value = "", .start = 40, .end = 40 },
-        .{ .token = .@"\"", .value = "", .start = 41, .end = 41 },
-        .{ .token = .str_literal, .value = "cool", .start = 42, .end = 45 },
-        .{ .token = .@"\"", .value = "", .start = 46, .end = 46 },
-        .{ .token = .@")", .value = "", .start = 47, .end = 47 },
-        .{ .token = .@";", .value = "", .start = 48, .end = 48 },
-        .{ .token = .@"}", .value = "", .start = 50, .end = 50 },
+        .{ .token = .cond, .value = "", .start = 0, .end = 3 },
+        .{ .token = .@"(", .value = "", .start = 4, .end = 4 },
+        .{ .token = .identifier, .value = "abc", .start = 5, .end = 7 },
+        .{ .token = .@")", .value = "", .start = 8, .end = 8 },
+        .{ .token = .@"{", .value = "", .start = 9, .end = 9 },
+        .{ .token = .@">", .value = "", .start = 11, .end = 12 },
+        .{ .token = .num_literal, .value = "10", .start = 13, .end = 14 },
+        .{ .token = .@"=>", .value = "", .start = 15, .end = 16 },
+        .{ .token = .identifier, .value = "print", .start = 18, .end = 22 },
+        .{ .token = .@"(", .value = "", .start = 23, .end = 23 },
+        .{ .token = .@"\"", .value = "", .start = 24, .end = 24 },
+        .{ .token = .str_literal, .value = "abc", .start = 25, .end = 27 },
+        .{ .token = .@"\"", .value = "", .start = 28, .end = 28 },
+        .{ .token = .@")", .value = "", .start = 29, .end = 29 },
+        .{ .token = .@",", .value = "", .start = 30, .end = 30 },
+        .{ .token = .@"else", .value = "", .start = 32, .end = 35 },
+        .{ .token = .@"=>", .value = "", .start = 36, .end = 37 },
+        .{ .token = .identifier, .value = "print", .start = 39, .end = 43 },
+        .{ .token = .@"(", .value = "", .start = 44, .end = 44 },
+        .{ .token = .@"\"", .value = "", .start = 45, .end = 45 },
+        .{ .token = .str_literal, .value = "cool", .start = 46, .end = 49 },
+        .{ .token = .@"\"", .value = "", .start = 50, .end = 50 },
+        .{ .token = .@")", .value = "", .start = 51, .end = 51 },
+        .{ .token = .@";", .value = "", .start = 52, .end = 52 },
+        .{ .token = .@"}", .value = "", .start = 53, .end = 53 },
     };
-
     const actual_tokens = try lexer.tokenize();
     defer lexer.alloc.free(actual_tokens);
 

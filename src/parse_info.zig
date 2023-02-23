@@ -16,8 +16,10 @@ pub const TokenType = enum(u8) {
     num_literal, // <number>
     str_literal, // <string>
 
+    // Types
     number, // <int>
-    string, // <string> (type)
+    string, // <string>
+    bool, // <bool>
 
     // Literal
     @"\"", // "
@@ -32,6 +34,7 @@ pub const TokenType = enum(u8) {
     // Stream
     @"|>", // |>
     @"~>", // ~>
+    @"=>", // =>
 
     // Comparison
     @"==", // ==
@@ -74,15 +77,12 @@ pub const TokenType = enum(u8) {
     @"::", // ::
 
     // Keywords
-    @"if", // if
+    ignore, // _
+    cond, // cond
     @"else", // else
-    @"for", // for
-    @"while", // while
     true, // true
     false, // false
     @"return", // return
     let, // let
     mut, // mut
-    @"break", // break
-    @"continue", // continue
 };
