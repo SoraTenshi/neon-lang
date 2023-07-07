@@ -20,6 +20,7 @@ pub const TokenType = enum(u8) {
     number, // <int>
     string, // <string>
     bool, // <bool>
+    any, // <any>
 
     // Literal
     @"\"", // "
@@ -55,6 +56,7 @@ pub const TokenType = enum(u8) {
     @"?", // ?
     @"!", // !
     @"@", // @
+    @"~", // ~
 
     // Bitwise
     @"|", // |
@@ -85,4 +87,6 @@ pub const TokenType = enum(u8) {
     @"return", // return
     let, // let
     mut, // mut
+    unique, // unique
+    do, // do
 };

@@ -3,11 +3,16 @@
 // standard library (if that ever happens..) will be imported by default (via interpretation)
 
 // all functions are in the same file for now, therefore no visibility required
-another_function :: (input: string): string {
+map :: (e: any, m: (unique?)::(~e)): any {
+  return do m(e); // for each e, do m(e)
+}
+
+// unique functions introduce sideeffects and cannot be called from normal functions.
+unique another_function :: (input: string): string {
   return @input; // the '@' operator spawns a new process that executes and returns a "stream" 
 }
 
-main :: (): int {
+unique main :: (): int {
   // let mut declaration and initialization
   let mut a: int = 1337;
 

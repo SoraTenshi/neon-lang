@@ -67,8 +67,10 @@ pub const Lexer = struct {
     fn lookaheadString(lexer: *Lexer, consume: bool) ?[]const u8 {
         const c = lexer.source[lexer.position + lexer.look_ahead];
         const result = switch (c) {
+            'a' => lexer.findToken("any"),
             'b' => lexer.findToken("bool"),
             'c' => lexer.findToken("cond"),
+            'd' => lexer.findToken("do"),
             'e' => lexer.findToken("else"),
             'f' => lexer.findToken("false"),
             'i' => lexer.findToken("ignore"),
@@ -78,6 +80,7 @@ pub const Lexer = struct {
             'r' => lexer.findToken("return"),
             's' => lexer.findToken("string"),
             't' => lexer.findToken("true"),
+            'u' => lexer.findToken("unique"),
             'w' => lexer.findToken("while"),
             else => lexer.lookaheadCharacter(),
         };
