@@ -20,23 +20,29 @@ const Type = enum {
 // TODO: investigate whether it makes sense to create new enum types based on the
 // token? like unary ops, pipes, basically any token that may have any influence
 // on the AST.
-pub const AstNode = struct {
-    node_type: Type,
-    range: Range,
-    depth: usize,
-    // TODO: does this even work the way i expect?
-    content: union(Type) {
-        Function: struct {
-            name: []const u8,
-            parameters: ?[]AstNode,
-            body: ?[]AstNode,
-        },
-        Variable: struct {
-            name: []const u8,
-        },
-        Literal: struct {
-            name: []const u8,
-        },
+pub const AstNode = union(enum) {
+    number_literal: i64,
+    string_literal: []const u8,
+    bool_literal: bool,
+    identifier: []const u8,
+
+    function_declaration: struct {
+        name: []const u8,
+        parameters: std.ArrayList([]const u8),
+        body: std.ArrayList(*AstNode),
+    },
+
+    function_call: struct {
+        name: []const u8,
+        arguments: std.ArrayList(*AstNode),
+    },
+
+    return_statement: *AstNode,
+
+    conditional_statement: struct {
+        condition: *AstNode,
+        then_branch: std.ArrayList(*AstNode),
+        else_branch: std.ArrayList(*AstNode),
     },
 };
 
