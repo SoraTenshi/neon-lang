@@ -3,7 +3,7 @@
 // standard library (if that ever happens..) will be imported by default (via interpretation)
 
 // all functions are in the same file for now, therefore no visibility required
-map :: func(e: any, m: (func)::(~e)): any {
+map :: func(e: any, m: func(type)): any { // same as decl, sort of. but variable names can be omitted.
   return do m(e); // for each e, do m(e)
 }
 
